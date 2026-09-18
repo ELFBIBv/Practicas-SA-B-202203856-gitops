@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sa-platform
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/ELFBIBv/Practicas-SA-B-202203856-gitops.git
+    targetRevision: main
+    path: charts/sa-platform
+    helm:
+      valueFiles:
+        - values-azure.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sa-p5
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m
