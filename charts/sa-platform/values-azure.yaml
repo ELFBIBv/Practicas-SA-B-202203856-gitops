@@ -4,8 +4,10 @@ global:
   imagePullSecrets:
     - name: ghcr-secret
   logLevel: info
-  mysqlSecretName: ""
-  mongodbSecretName: ""
+  # En AKS estos Secrets los administra Sealed Secrets; Helm solo los
+  # consume. Esto evita que Argo CD regenere contraseñas en cada render.
+  mysqlSecretName: sa-platform-mysql
+  mongodbSecretName: sa-platform-mongodb
   natsAuthSecretName: sa-platform-nats-auth
   # En azure ese secreto ya lo gestiona un SealedSecret (ver
   # CAMBIOS-GITOPS.md, Fase 10) — si el chart también intenta crearlo
@@ -15,6 +17,9 @@ global:
   # no hay Sealed Secrets — el chart se autogestiona el secreto entero.
   natsAuthSecretCreate: false
 
+sealedSecrets:
+  enabled: true
+
 mysql:
   enabled: true
   persistence:
@@ -23,14 +28,14 @@ mysql:
   auth:
     database: "sa_p5"
     username: "user"
-    existingSecret: ""
+    existingSecret: sa-platform-mysql
 
 mongodb:
   enabled: true
   auth:
     database: "catalog_db"
     username: "root"
-    existingSecret: ""
+    existingSecret: sa-platform-mongodb
   persistence:
     enabled: true
     size: 2Gi
@@ -80,7 +85,7 @@ api-gateway:
   replicaCount: 5
   image:
     repository: ghcr.io/elfbibv/sa-api-gateway
-    tag: "705a98e"
+    tag: "e971c97"
     pullPolicy: IfNotPresent
   service:
     type: LoadBalancer
@@ -107,12 +112,14 @@ auth:
   replicaCount: 2
   image:
     repository: ghcr.io/elfbibv/sa-auth-service
-    tag: "705a98e"
+    tag: "e971c97"
     pullPolicy: IfNotPresent
   config:
     nodeEnv: production
     databaseUser: user
     databaseName: auth_db
+  secrets:
+    existingSecret: sa-platform-auth-secrets
   resources:
     limits:
       cpu: 200m
@@ -125,7 +132,7 @@ catalog:
   replicaCount: 2
   image:
     repository: ghcr.io/elfbibv/sa-catalog-service
-    tag: "705a98e"
+    tag: "e971c97"
     pullPolicy: IfNotPresent
   resources:
     limits:
@@ -139,7 +146,7 @@ orders:
   replicaCount: 2
   image:
     repository: ghcr.io/elfbibv/sa-order-service
-    tag: "705a98e"
+    tag: "e971c97"
     pullPolicy: IfNotPresent
   config:
     databaseUser: user
@@ -156,7 +163,7 @@ notifications:
   replicaCount: 2
   image:
     repository: ghcr.io/elfbibv/sa-notification-service
-    tag: "705a98e"
+    tag: "e971c97"
     pullPolicy: IfNotPresent
   resources:
     limits:
@@ -172,12 +179,12 @@ cronjobs:
   cron1:
     image:
       repository: ghcr.io/elfbibv/sa-cron1
-      tag: "705a98e"
+      tag: "e971c97"
       pullPolicy: IfNotPresent
   cron2:
     image:
       repository: ghcr.io/elfbibv/sa-cron2
-      tag: "705a98e"
+      tag: "e971c97"
       pullPolicy: IfNotPresent
 
 # Calculado contra la capacidad real del clúster de 2 nodos
