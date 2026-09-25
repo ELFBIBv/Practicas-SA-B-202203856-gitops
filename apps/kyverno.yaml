@@ -30,6 +30,18 @@ spec:
         - '.spec.template.metadata.annotations'
         - '.spec.selector'
         - '.spec.template.metadata.labels'
+    # Kyverno inyecta su CA interna en el caBundle de los webhooks en
+    # runtime. Sin ignorarlo, ArgoCD marca los 10 webhooks como OutOfSync
+    # de forma permanente. Es el problema más documentado de Kyverno +
+    # ArgoCD y la causa más probable del OutOfSync tras el primer sync.
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - '.webhooks[].clientConfig.caBundle'
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - '.webhooks[].clientConfig.caBundle'
   syncPolicy:
     automated:
       prune: true
