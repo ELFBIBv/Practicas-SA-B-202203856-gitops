@@ -90,6 +90,14 @@ api-gateway:
   service:
     type: LoadBalancer
     port: 80
+    # La suscripción tiene un límite de 3 IPs públicas por región y ya hay
+    # otras 2 en uso fuera de P9 (P8) más la IP de egress que AKS crea sola
+    # para aks-sa-p9. Sin esta anotación, Azure rechaza la IP nueva con
+    # PublicIPCountLimitReached y el Service queda <pending> para siempre.
+    # Se reutiliza esa IP de egress (vive en el mismo node resource group,
+    # por eso no hace falta azure-load-balancer-resource-group).
+    annotations:
+      service.beta.kubernetes.io/azure-pip-name: "1334df2a-c815-41b6-8b70-44033160e679"
   ingress:
     enabled: false
   rollout:
