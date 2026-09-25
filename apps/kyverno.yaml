@@ -18,10 +18,15 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kyverno
   ignoreDifferences:
+    # ServerSideDiff=true no suprime el default del apiserver en algunos CRD
+    # nuevos (Kyverno 3.9.1: deletingpolicies, mutatingpolicies, etc.) solo
+    # con '.spec' amplio: el apiserver rellena .spec.conversion.strategy=None
+    # y esa ruta puntual sigue marcando OutOfSync pese al ignore de '.spec'.
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition
       jqPathExpressions:
         - '.spec'
+        - '.spec.conversion'
         - '.metadata.annotations'
     - group: batch
       kind: Job
