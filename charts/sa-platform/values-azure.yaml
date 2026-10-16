@@ -10,7 +10,7 @@ global:
   mongodbSecretName: sa-platform-mongodb
   natsAuthSecretName: sa-platform-nats-auth
   # En azure ese secreto ya lo gestiona un SealedSecret (ver
-  # CAMBIOS-GITOPS.md, Fase 10) — si el chart también intenta crearlo
+  # P8/CAMBIOS-GITOPS.md, Fase 10) — si el chart también intenta crearlo
   # (nats-secret.yaml), quedan dos dueños distintos para el mismo objeto.
   # false acá deja al SealedSecret como única fuente de verdad; en kind
   # (values-kind.yaml, que no sobreescribe esto) sigue en true porque ahí
@@ -91,13 +91,15 @@ api-gateway:
     type: LoadBalancer
     port: 80
     # La suscripción tiene un límite de 3 IPs públicas por región y ya hay
-    # otras 2 en uso fuera de P9 (P8) más la IP de egress que AKS crea sola
-    # para aks-sa-p9. Sin esta anotación, Azure rechaza la IP nueva con
-    # PublicIPCountLimitReached y el Service queda <pending> para siempre.
-    # Se reutiliza esa IP de egress (vive en el mismo node resource group,
-    # por eso no hace falta azure-load-balancer-resource-group).
+    # otras 2 en uso fuera de P9 (P8). Terraform (modules/cluster,
+    # azurerm_public_ip.gateway) crea UNA IP con nombre fijo que AKS usa como
+    # salida y que este Service reutiliza como frontend. Antes se apuntaba a
+    # la IP de egress autogenerada por AKS, cuyo nombre es un GUID distinto
+    # en cada clúster: tras reconstruir, el Service quedaba <pending>.
+    # Debe coincidir con var.public_ip_name y var.resource_group_name.
     annotations:
-      service.beta.kubernetes.io/azure-pip-name: "1334df2a-c815-41b6-8b70-44033160e679"
+      service.beta.kubernetes.io/azure-pip-name: "pip-sa-p9-gateway"
+      service.beta.kubernetes.io/azure-load-balancer-resource-group: "rg-p9-aks"
   ingress:
     enabled: false
   rollout:
